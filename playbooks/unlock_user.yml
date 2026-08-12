@@ -1,0 +1,31 @@
+---
+- name: Desbloquear usuario Linux
+  hosts: all
+  become: true
+
+  vars:
+    username: "{{ target_username | default('userlab') }}"
+
+  tasks:
+
+    - name: Comprobar que el usuario existe
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ username }}"
+      register: user_check
+      failed_when: false
+
+    - name: Detener ejecución si el usuario no existe
+      ansible.builtin.fail:
+        msg: "El usuario '{{ username }}' no existe en el servidor."
+      when: user_check.ansible_facts.getent_passwd is not defined
+
+    - name: Desbloquear usuario
+      ansible.builtin.user:
+        name: "{{ username }}"
+        password_lock: false
+      register: unlock_result
+
+    - name: Mostrar resultado
+      ansible.builtin.debug:
+        msg: "Usuario '{{ username }}' desbloqueado correctamente."
